@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>বোটানি অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question: "নিচের কোনটি ভাইরাসের উপকারী কাজ?",
+          options: {
+            a: "সমুদ্রের CO2 শোষণ করা",
+            b: "খরগোশের প্রজনন বৃদ্ধি করা",
+            c: "শুধুমাত্র জড় বৈশিষ্ট্য থাকা",
+            d: "ফুলের পাপড়িতে ছাপ দেওয়া",
+          },
+          correct: "d",
+          explanation:
+            "<p>ভাইরাসের একটি উপকারী কাজ হলো ফুলের পাপড়িতে বিভিন্ন নকশা বা ছাপ তৈরি করা।<br>- এই নকশাগুলি পরাগায়নে সাহায্যকারী পোকামাকড়কে আকর্ষণ করে।<br>- সমুদ্রের কার্বন ডাই অক্সাইড (CO<sub>2</sub>) শোষণ মূলত ফাইটোপ্ল্যাঙ্কটন দ্বারা সম্পন্ন হয়, যা ভাইরাস করে না।<br>- খরগোশের প্রজনন সরাসরি ভাইরাসের দ্বারা বৃদ্ধি পায় না।<br>- ভাইরাস জীবন্ত কোষের বাইরে নিষ্ক্রিয় বা জড় বৈশিষ্ট্য প্রদর্শন করে, যা কোনো উপকারী কাজ নয় বরং ভাইরাসের একটি বৈশিষ্ট্য মাত্র।</p>",
+        },
+        {
+          id: 2,
+          question: "কোনটি উদ্ভিদদেহের রোগসৃষ্টিকারী ভাইরাস?",
+          options: {
+            a: "ইয়েলো ফিভার ভাইরাস",
+            b: "টুংরো ভাইরাস",
+            c: "ফুট অ্যান্ড মাউথ ভাইরাস",
+            d: "ফ্লাভি ভাইরাস",
+          },
+          correct: "b",
+          explanation:
+            "<p>টুংরো ভাইরাস ধানের একটি প্রধান রোগ সৃষ্টি করে, যা ধানের ফলন কমিয়ে দেয়।<br>- ইয়েলো ফিভার ভাইরাস এবং ফ্লাভি ভাইরাস উভয়ই মানুষের রোগ সৃষ্টি করে। ফ্ল্যাভিভাইরাস গোত্রের মধ্যে ডেঙ্গু এবং জিকা ভাইরাসও অন্তর্ভুক্ত।<br>- ফুট অ্যান্ড মাউথ ভাইরাস গবাদিপশুর রোগ সৃষ্টি করে, যা পশুর অর্থনীতিতে বড় প্রভাব ফেলে।</p>",
+        },
+        {
+          id: 3,
+          question: "কোন পদ্ধতিতে কোভিড ১৯ ভ্যাক্সিন প্রস্তুত করা হয় না?",
+          options: {
+            a: "এমআরএনএ (mRNA)",
+            b: "উপএকক (subunit vaccine)",
+            c: "বিষভিত্তিক (toxoid)",
+            d: "নিষ্ক্রিয় (inactivated)",
+          },
+          correct: "c",
+          explanation:
+            "<p>কোভিড-১৯ ভ্যাক্সিন তৈরিতে মূলত mRNA, উপএকক এবং নিষ্ক্রিয় ভাইরাস পদ্ধতি ব্যবহার করা হয়েছে।<br>- mRNA ভ্যাক্সিন ভাইরাসের জেনেটিক তথ্য ব্যবহার করে।<br>- উপএকক ভ্যাক্সিন ভাইরাসের একটি নির্দিষ্ট প্রোটিন অংশ ব্যবহার করে।<br>- নিষ্ক্রিয় ভ্যাক্সিন রাসায়নিক বা তাপ দ্বারা নিষ্ক্রিয় করা সম্পূর্ণ ভাইরাস ব্যবহার করে।<br>- বিষভিত্তিক (toxoid) ভ্যাক্সিন ব্যাকটেরিয়ার তৈরি বিষের নিষ্ক্রিয় রূপ ব্যবহার করে, যেমন টিটেনাস এবং ডিপথেরিয়ার ক্ষেত্রে। কোভিড-১৯ ভাইরাসের ক্ষেত্রে এই পদ্ধতি প্রযোজ্য নয় কারণ এটি বিষ উৎপন্ন করে না।</p>",
+        },
+        {
+          id: 5,
+          question: "সমগোত্রীয় নয় কোনটি?",
+          options: {
+            a: "Yellow fever",
+            b: "চিকুনগুনিয়া জ্বর",
+            c: "Influenza fever",
+            d: "Typhoid fever",
+          },
+          correct: "d",
+          explanation:
+            "<p>টাইফয়েড জ্বর অন্যান্য বিকল্পগুলির সাথে সমগোত্রীয় নয়।<br>- ইয়েলো ফিভার, চিকুনগুনিয়া জ্বর এবং ইনফ্লুয়েঞ্জা জ্বর - এই তিনটিই ভাইরাস দ্বারা সৃষ্ট রোগ। ইয়েলো ফিভার এবং চিকুনগুনিয়া ফ্ল্যাভিভাইরাস ও টোগাভাইরাস দ্বারা সৃষ্ট, আর ইনফ্লুয়েঞ্জা ইনফ্লুয়েঞ্জা ভাইরাস দ্বারা হয়।<br>- টাইফয়েড জ্বর হল একটি ব্যাকটেরিয়াজনিত রোগ, যা <i>Salmonella enterica serovar Typhi</i> নামক ব্যাকটেরিয়ার সংক্রমণে ঘটে।</p>",
+        },
+        {
+          id: 6,
+          question: "সোয়াইন ফ্লু রোগের জন্য দায়ী ভাইরাস কোনটি?",
+          options: {
+            a: "H1N1",
+            b: "HIV",
+            c: "GMV",
+            d: "রুবেলা",
+          },
+          correct: "a",
+          explanation:
+            "<p>সোয়াইন ফ্লু রোগের জন্য দায়ী ভাইরাস হলো ইনফ্লুয়েঞ্জা এ ভাইরাসের একটি স্ট্রেইন, যার বৈজ্ঞানিক নাম H1N1।<br>- HIV (Human Immunodeficiency Virus) এইডস রোগের জন্য দায়ী।<br>- GMV কোনো পরিচিত ভাইরাস নয়।<br>- রুবেলা ভাইরাস রুবেলা বা জার্মান হাম রোগের জন্য দায়ী।</p>",
+        },
+        {
+          id: 7,
+          question: "ডেঙ্গু কোন ভাইরাস জনিত রোগ/ডেঙ্গু রোগের ভাইরাসের নাম কী?",
+          options: {
+            a: "ফ্ল্যাভি ভাইরাস",
+            b: "ইবোলা ভাইরাস",
+            c: "এডিনো ভাইরাস",
+            d: "পটি ভাইরাস",
+          },
+          correct: "a",
+          explanation:
+            "<p>ডেঙ্গু জ্বর সৃষ্টিকারী ভাইরাস ফ্ল্যাভি ভাইরাস (Flavivirus) গোত্রের সদস্য।<br>- এই গোত্রের অন্যান্য গুরুত্বপূর্ণ ভাইরাসের মধ্যে ইয়েলো ফিভার ভাইরাস এবং জিকা ভাইরাস অন্যতম।<br>- ইবোলা ভাইরাস একটি সূত্রাকার ভাইরাস যা মারাত্মক রক্তক্ষরণজনিত জ্বর সৃষ্টি করে।<br>- এডিনো ভাইরাস শ্বাসযন্ত্র এবং চোখের সংক্রমণ ঘটায়।<br>- পটি ভাইরাস সাধারণত উদ্ভিদের রোগ সৃষ্টিকারী ভাইরাস, যেমন পেঁপে রিংস্পট ভাইরাস (PRSV)।</p>",
+        },
+        {
+          id: 8,
+          question: "কোনটি বার্ড-ফ্লু ভাইরাস?",
+          options: {
+            a: "H5N1",
+            b: "B3N3",
+            c: "B5F",
+            d: "B4F2",
+          },
+          correct: "a",
+          explanation:
+            "<p>বার্ড ফ্লু বা এভিয়ান ইনফ্লুয়েঞ্জা হলো ইনফ্লুয়েঞ্জা এ ভাইরাসের একটি স্ট্রেইন, যার সবচেয়ে পরিচিত এবং বিপদজনক ধরন হলো H5N1।<br>- এই ভাইরাস সাধারণত পাখি থেকে ছড়ায়, তবে মানুষের মধ্যেও সংক্রমিত হতে পারে এবং গুরুতর রোগ সৃষ্টি করে।<br>- অন্যান্য অপশনগুলো (B3N3, B5F, B4F2) পরিচিত বার্ড ফ্লু ভাইরাসের স্ট্রেইন নয়।</p>",
+        },
+        {
+          id: 9,
+          question: "টুংরো ভাইরাস কোন গাছকে রোগাক্রান্ত করে?",
+          options: {
+            a: "ধান",
+            b: "গম",
+            c: "ভুট্টা",
+            d: "মটর",
+          },
+          correct: "a",
+          explanation:
+            "<p>টুংরো ভাইরাস (Rice Tungro Virus) প্রধানত ধান গাছকে রোগাক্রান্ত করে।<br>- এই ভাইরাস ধান গাছের বৃদ্ধি ব্যাহত করে, পাতার রঙ পরিবর্তন করে এবং ফলন উল্লেখযোগ্যভাবে কমিয়ে দেয়।<br>- এটি ধানের অন্যতম গুরুত্বপূর্ণ রোগ।</p>",
+        },
+        {
+          id: 10,
+          question: "এইডস রোগ নিম্নের কোন ভাইরাস দিয়ে সংঘটিত হয়?",
+          options: {
+            a: "CD 4",
+            b: "Vaccinia",
+            c: "TMV",
+            d: "HIV",
+          },
+          correct: "d",
+          explanation:
+            "<p>এইডস (Acquired Immunodeficiency Syndrome) রোগ HIV (Human Immunodeficiency Virus) নামক ভাইরাসের সংক্রমণের কারণে হয়।<br>- HIV মানবদেহের রোগ প্রতিরোধ ক্ষমতাকে দুর্বল করে দেয়, যা এইডসের দিকে পরিচালিত করে।<br>- CD4 হলো এক প্রকার শ্বেত রক্তকণিকা, যা HIV দ্বারা আক্রান্ত হয়।<br>- ভ্যাক্সিনিয়া ভাইরাস গুটিবসন্তের টিকা তৈরিতে ব্যবহৃত হয়।<br>- TMV (Tobacco Mosaic Virus) তামাকের মোজাইক রোগ সৃষ্টিকারী উদ্ভিদ ভাইরাস।</p>",
+        },
+        {
+          id: 11,
+          question: "ভাইরাসের ব্যবহার সম্পর্কে কোনটি সঠিক?",
+          options: {
+            a: "মাটির উর্বরতা বৃদ্ধি",
+            b: "দধি তৈরি",
+            c: "খাদ্য সংরক্ষণ",
+            d: "জলজ বাস্তুতন্ত্রের ভারসাম্য রক্ষা",
+          },
+          correct: "d",
+          explanation:
+            "<p>ভাইরাসের একটি গুরুত্বপূর্ণ উপকারী ব্যবহার হলো জলজ বাস্তুতন্ত্রের ভারসাম্য রক্ষা করা।<br>- ভাইরাস জলজ পরিবেশে থাকা ব্যাকটেরিয়া এবং শৈবালের সংখ্যা নিয়ন্ত্রণ করে, যা বাস্তুতন্ত্রের পুষ্টিচক্র এবং প্রজাতির ভারসাম্য বজায় রাখতে সাহায্য করে।<br>- মাটির উর্বরতা বৃদ্ধি মূলত ব্যাকটেরিয়া ও ছত্রাকের কাজ।<br>- দধি তৈরিতে ল্যাকটিক অ্যাসিড ব্যাকটেরিয়া ব্যবহৃত হয়।<br>- খাদ্য সংরক্ষণে বিভিন্ন ভৌত ও রাসায়নিক পদ্ধতি ব্যবহার করা হয়, যেমন ফ্রিজিং, শুকানো বা রাসায়নিক যোগ করা।</p>",
+        },
+        {
+          id: 12,
+          question: "নিচের কোনটি ভাইরাসজনিত জ্বর নয়?",
+          options: {
+            a: "পোলিও",
+            b: "ডিপথেরিয়া",
+            c: "টাইফয়েড জ্বর",
+            d: "ইনফ্লুয়েঞ্জা",
+          },
+          correct: "b",
+          explanation:
+            "<p>ডিপথেরিয়া একটি ভাইরাসজনিত জ্বর নয়।<br>- ডিপথেরিয়া হলো <i>Corynebacterium diphtheriae</i> নামক ব্যাকটেরিয়ার কারণে সৃষ্ট একটি গুরুতর ব্যাকটেরিয়াজনিত রোগ।<br>- পোলিও পোলিওভাইরাস দ্বারা সৃষ্ট একটি ভাইরাসজনিত রোগ, যা স্নায়ুতন্ত্রকে আক্রমণ করে।<br>- টাইফয়েড জ্বর <i>Salmonella Typhi</i> নামক ব্যাকটেরিয়ার কারণে হয়।<br>- ইনফ্লুয়েঞ্জা ইনফ্লুয়েঞ্জা ভাইরাস দ্বারা সৃষ্ট একটি ভাইরাসজনিত জ্বর।</p>",
+        },
+        {
+          id: 13,
+          question: "জিকা ভাইরাস মানুষের দেহে সংক্রমিত হয় কোন বাহকের মাধ্যমে?",
+          options: {
+            a: "এডিস মশক",
+            b: "এডিস মশকী",
+            c: "অ্যানোফিলিস মশক",
+            d: "অ্যানোফিলিস মশকী",
+          },
+          correct: "b",
+          explanation:
+            "<p>জিকা ভাইরাস মানুষের দেহে মূলত এডিস প্রজাতির স্ত্রী মশার (Aedes aegypti এবং Aedes albopictus) কামড়ের মাধ্যমে সংক্রমিত হয়।<br>- শুধুমাত্র স্ত্রী মশা রক্ত পান করে এবং রোগ ছড়ায়।<br>- অ্যানোফিলিস মশকী ম্যালেরিয়া রোগের বাহক।</p>",
+        },
+        {
+          id: 14,
+          question: "নিচের কোন রোগটি ভাইরাস দ্বারা হয়?",
+          options: {
+            a: "টাইফয়েড",
+            b: "নিউমোনিয়া",
+            c: "ইনফ্লুয়েঞ্জা",
+            d: "হুপিংকাশি",
+          },
+          correct: "c",
+          explanation:
+            "<p>ইনফ্লুয়েঞ্জা একটি ভাইরাসজনিত রোগ, যা ইনফ্লুয়েঞ্জা ভাইরাসের (A, B, C) মাধ্যমে হয়।<br>- টাইফয়েড <i>Salmonella Typhi</i> নামক ব্যাকটেরিয়ার কারণে হয়।<br>- নিউমোনিয়া ব্যাকটেরিয়া, ভাইরাস, ছত্রাক বা মাইকোপ্লাজমা দ্বারা সৃষ্ট হতে পারে, তবে এটি নির্দিষ্টভাবে শুধুমাত্র ভাইরাসজনিত রোগ নয়।<br>- হুপিংকাশি (পার্টুসিস) <i>Bordetella pertussis</i> নামক ব্যাকটেরিয়ার কারণে হয়।</p>",
+        },
+        {
+          id: 15,
+          question: "কোনটি ভাইরাস রোগ?",
+          options: {
+            a: "যক্ষ্মা",
+            b: "কলেরা",
+            c: "জলাতঙ্ক",
+            d: "ধনুষ্টংকার",
+          },
+          correct: "c",
+          explanation:
+            "<p>জলাতঙ্ক (Rabies) র‍্যাবিস ভাইরাসের সংক্রমণে সৃষ্ট একটি মারাত্মক ভাইরাসজনিত রোগ।<br>- যক্ষ্মা (টিউবারকুলোসিস) <i>Mycobacterium tuberculosis</i> নামক ব্যাকটেরিয়ার কারণে হয়।<br>- কলেরা <i>Vibrio cholerae</i> নামক ব্যাকটেরিয়ার কারণে হয়।<br>- ধনুষ্টংকার (টিটেনাস) <i>Clostridium tetani</i> নামক ব্যাকটেরিয়ার কারণে হয়।</p>",
+        },
+        {
+          id: 16,
+          question: "কোন ভাইরাস দিয়ে ক্যাপোসি সারকোমা রোগ হয়?",
+          options: {
+            a: "ইবোলা ভাইরাস",
+            b: "হার্পিস ভাইরাস",
+            c: "রিট্রো ভাইরাস",
+            d: "এনসেফালাইটিস ভাইরাস",
+          },
+          correct: "b",
+          explanation:
+            "<p>ক্যাপোসি সারকোমা (Kaposi's sarcoma) হলো এক ধরনের ক্যান্সার যা হার্পিস ভাইরাস ৮ (Human herpesvirus 8, HHV-8) দ্বারা সৃষ্ট হয়।<br>- ইবোলা ভাইরাস ইবোলা রোগ সৃষ্টি করে।<br>- রিট্রোভাইরাস গোত্রের মধ্যে HIV অন্তর্ভুক্ত, যা এইডস সৃষ্টি করে।<br>- এনসেফালাইটিস ভাইরাস মস্তিষ্কের প্রদাহ ঘটায়।</p>",
+        },
+        {
+          id: 18,
+          question: "মানবদেহে হাম রোগের জন্য দায়ী ভাইরাস কোনটি?",
+          options: {
+            a: "রুবেলা",
+            b: "কবিগুলা",
+            c: "চিকুনগুনিয়া",
+            d: "ভেরিওলা",
+          },
+          correct: "d",
+          explanation:
+            "<p>মানবদেহে হাম (Smallpox) রোগের জন্য দায়ী ভাইরাস হলো ভেরিওলা ভাইরাস (Variola virus)।<br>- রুবেলা ভাইরাস জার্মান হাম (Rubella) রোগ সৃষ্টি করে।<br>- কবিগুলা (Mumps) মাম্পস ভাইরাস দ্বারা হয়।<br>- চিকুনগুনিয়া চিকুনগুনিয়া ভাইরাস দ্বারা সৃষ্ট হয়।</p>",
+        },
+        {
+          id: 19,
+          question: "অ্যালকোহল শিল্পে ব্যবহৃত ইস্টকে ধ্বংস করে কে?",
+          options: {
+            a: "Cyanophage virus",
+            b: "Xymophage virus",
+            c: "Ebola virus",
+            d: "Polyhydrosis virus",
+          },
+          correct: "b",
+          explanation:
+            "<p>অ্যালকোহল শিল্পে ব্যবহৃত ইস্টকে জাইমোফায (Zymophage virus) নামক এক প্রকার ভাইরাস ধ্বংস করতে পারে।<br>- এই ভাইরাস ইস্ট কোষের উপর আক্রমণ করে এবং তাদের কার্যকারিতা ব্যাহত করে, যা অ্যালকোহল উৎপাদনে সমস্যা সৃষ্টি করতে পারে।<br>- সায়ানোফায সায়ানোব্যাকটেরিয়াকে আক্রমণ করে।<br>- ইবোলা ভাইরাস মানুষকে আক্রান্ত করে।<br>- পলিহাইড্রোসিস ভাইরাস পোকামাকড়কে আক্রান্ত করে।</p>",
+        },
+        {
+          id: 20,
+          question: "নিচের কোনটি হতে ‘জন্ডিস’ রোগের টিকা তৈরি হয়?",
+          options: {
+            a: "ভাইরাস",
+            b: "ব্যাকটেরিয়া",
+            c: "মাইকোপ্লাজম",
+            d: "অ্যাকটিনোমাইসিটিস",
+          },
+          correct: "a",
+          explanation:
+            "<p>জন্ডিস (হেপাটাইটিস) রোগের বিভিন্ন প্রকার ভাইরাস (যেমন হেপাটাইটিস এ, হেপাটাইটিস বি) রয়েছে।<br>- এই হেপাটাইটিস ভাইরাসগুলো থেকেই এদের প্রতিরোধের জন্য টিকা তৈরি করা হয়।<br>- ব্যাকটেরিয়া, মাইকোপ্লাজম এবং অ্যাকটিনোমাইসিটিস জন্ডিসের কারণ নয়, তাই এদের থেকে টিকা তৈরি হয় না।</p>",
+        },
+        {
+          id: 21,
+          question: "ডেঙ্গু ভাইরাস বিষয়ে কোনটি সঠিক?",
+          options: {
+            a: "এটি DNA ভাইরাস",
+            b: "এটি রাইনো ভাইরাসের উদাহরণ",
+            c: "আক্রান্ত ব্যক্তির রক্তে IgM অ্যান্টিবডি বেশি পাওয়া যায়",
+            d: "শুধুমাত্র এডিস এজেপ্টি (Aedes aegypti) মশা রোগ বিস্তার করে",
+          },
+          correct: "c",
+          explanation:
+            "<p>ডেঙ্গু ভাইরাসে আক্রান্ত ব্যক্তির রক্তে প্রাথমিক পর্যায়ে IgM অ্যান্টিবডির পরিমাণ বেশি থাকে, যা ডেঙ্গু রোগ নির্ণয়ে একটি গুরুত্বপূর্ণ সূচক।<br>- ডেঙ্গু একটি RNA ভাইরাস, DNA ভাইরাস নয়।<br>- ডেঙ্গু ভাইরাস ফ্ল্যাভিভাইরাস গোত্রের সদস্য, রাইনো ভাইরাসের উদাহরণ নয় (রাইনো ভাইরাস সাধারণ সর্দি-কাশির কারণ)।<br>- যদিও <i>Aedes aegypti</i> মশা ডেঙ্গু ছড়ানোর প্রধান বাহক, তবে <i>Aedes albopictus</i> মশাও ডেঙ্গু ছড়াতে পারে।</p>",
+        },
+        {
+          id: 22,
+          question:
+            "কোন হেপাটাইটিস ভাইরাস দূষিত পানি ও খাদ্যের মাধ্যমে সংক্রমণ ঘটায়?",
+          options: {
+            a: "Hepatitis D Virus",
+            b: "Hepatitis A Virus",
+            c: "Hepatitis C Virus",
+            d: "Hepatitis B Virus",
+          },
+          correct: "b",
+          explanation:
+            "<p>হেপাটাইটিস এ ভাইরাস (HAV) মূলত দূষিত পানি ও খাদ্যের মাধ্যমে মুখ-মল পথে (fecal-oral route) সংক্রমিত হয়।<br>- এটি সাধারণত একটি স্বল্পস্থায়ী রোগ এবং ক্রনিক হেপাটাইটিস সৃষ্টি করে না।<br>- হেপাটাইটিস বি, সি এবং ডি ভাইরাস সাধারণত রক্ত, যৌন মিলন বা শরীরের অন্যান্য তরলের মাধ্যমে ছড়ায়।</p>",
+        },
+        {
+          id: 23,
+          question: "PRSV ভাইরাস আক্রমণের কতদিন পর রোগের লক্ষণ প্রকাশ পায়?",
+          options: {
+            a: "১০-২০ দিন",
+            b: "২০-৩০ দিন",
+            c: "৩০-৪০ দিন",
+            d: "৪০-৫০ দিন",
+          },
+          correct: "c",
+          explanation:
+            "<p>PRSV (Papaya Ringspot Virus) ভাইরাস আক্রমণের প্রায় ৩০-৪০ দিন পর পেঁপে গাছে রোগের লক্ষণ প্রকাশ পেতে শুরু করে।<br>- রোগের লক্ষণগুলির মধ্যে পাতা হলুদ হয়ে যাওয়া, বিকৃত হওয়া, এবং ফলন কমে যাওয়া অন্তর্ভুক্ত।</p>",
+        },
+        {
+          id: 24,
+          question: "যকৃতের প্রদাহজনিত সমস্যা কোনটি?",
+          options: {
+            a: "হাম",
+            b: "বসন্ত",
+            c: "হেপাটাইটিস",
+            d: "ডেঙ্গু",
+          },
+          correct: "c",
+          explanation:
+            "<p>হেপাটাইটিস হলো যকৃতের (লিভার) প্রদাহজনিত সমস্যা।<br>- এটি বিভিন্ন ভাইরাস (যেমন হেপাটাইটিস এ, বি, সি, ডি, ই) দ্বারা সৃষ্ট হতে পারে, যা লিভারের কার্যকারিতা ব্যাহত করে।<br>- হাম এবং বসন্ত উভয়ই ভাইরাসজনিত রোগ, তবে এগুলো প্রধানত ত্বক এবং শ্বাসযন্ত্রকে আক্রান্ত করে।<br>- ডেঙ্গু একটি ভাইরাসজনিত জ্বর, যা তীব্র মাথাব্যথা, জ্বর এবং মাংসপেশীতে ব্যথা সৃষ্টি করে, তবে এর প্রাথমিক লক্ষ্য যকৃত নয়।</p>",
+        },
+        {
+          id: 25,
+          question: "সবচেয়ে মারাত্মক হেপাটাইটিস নিচের কোনটি?",
+          options: {
+            a: "Hepatitis A",
+            b: "Hepatitis B",
+            c: "Hepatitis C",
+            d: "Hepatitis D",
+          },
+          correct: "c",
+          explanation:
+            "<p>হেপাটাইটিস সি (Hepatitis C) কে সবচেয়ে মারাত্মক হেপাটাইটিস হিসেবে বিবেচনা করা হয়।<br>- কারণ এটি প্রায়শই দীর্ঘস্থায়ী সংক্রমণ ঘটায় এবং সময়ের সাথে সাথে লিভার সিরোসিস (Liver cirrhosis) এবং লিভার ক্যান্সারের (Liver cancer) উচ্চ ঝুঁকি তৈরি করে।<br>- হেপাটাইটিস এ সাধারণত স্বল্পস্থায়ী এবং হেপাটাইটিস বিও গুরুতর হতে পারে তবে হেপাটাইটিস সি-এর ক্রনিক হওয়ার প্রবণতা বেশি।</p>",
+        },
+        {
+          id: 26,
+          question: "রেইনবো ও সানআপ ভাইরাস প্রতিরোধী কোন উদ্ভিদের?",
+          options: {
+            a: "আম",
+            b: "কলা",
+            c: "পেঁপে",
+            d: "লিচু",
+          },
+          correct: "c",
+          explanation:
+            "<p>রেইনবো (Rainbow) এবং সানআপ (SunUp) হলো পেঁপের দুটি বিশেষভাবে তৈরি করা ভাইরাস প্রতিরোধী জাত।<br>- এই জাতগুলো Papaya Ringspot Virus (PRSV) এর বিরুদ্ধে প্রতিরোধ ক্ষমতা সম্পন্ন, যা পেঁপে চাষে একটি বড় সমস্যা।<br>- এই জাতগুলো জেনেটিক ইঞ্জিনিয়ারিংয়ের মাধ্যমে তৈরি করা হয়েছে।</p>",
+        },
+        {
+          id: 27,
+          question: "মানুষের ব্যাকবোন ফিভারের জন্য দায়ী কোন ভাইরাস?",
+          options: {
+            a: "Herpes virus",
+            b: "Rubeola virus",
+            c: "Flavi virus",
+            d: "Variola virus",
+          },
+          correct: "c",
+          explanation:
+            "<p>ফ্ল্যাভি ভাইরাস (Flavivirus) ডেঙ্গু জ্বরের কারণ। ডেঙ্গু জ্বরকে অনেক সময় 'হাড় ভাঙ্গা জ্বর' বা 'ব্যাকবোন ফিভার' বলা হয় কারণ এতে আক্রান্ত ব্যক্তির তীব্র হাড়, মাংসপেশী এবং জয়েন্টে ব্যথা হয়।<br>- হার্পিস ভাইরাস হার্পিস সংক্রমণ সৃষ্টি করে।<br>- রুবিওলা ভাইরাস হাম (Measles) সৃষ্টি করে।<br>- ভেরিওলা ভাইরাস গুটিবসন্ত (Smallpox) সৃষ্টি করে।</p>",
+        },
+        {
+          id: 28,
+          question: "PRSV-এর আকৃতি কীরূপ?",
+          options: {
+            a: "দণ্ডাকৃতি",
+            b: "গোলাকৃতি",
+            c: "ঘনক্ষেত্রাকৃতি",
+            d: "ডিম্বাকৃতি",
+          },
+          correct: "a",
+          explanation:
+            "<p>PRSV (Papaya Ringspot Virus) হলো একটি দণ্ডাকৃতির (rod-shaped) ভাইরাস।<br>- এটি পটিভাইরাস (Potyvirus) গোত্রের অন্তর্ভুক্ত এবং এই গোত্রের ভাইরাসগুলির আকৃতি সাধারণত দণ্ডাকার হয়।</p>",
+        },
+        {
+          id: 29,
+          question: "পেঁপের রিংস্পট রোগের জীবাণু কোনটি?",
+          options: {
+            a: "TMV",
+            b: "PRSV",
+            c: "T1",
+            d: "CCC",
+          },
+          correct: "b",
+          explanation:
+            "<p>পেঁপের রিংস্পট রোগের জীবাণু হলো PRSV (Papaya Ringspot Virus)।<br>- এই ভাইরাস পেঁপে গাছের পাতায় এবং ফলে রিং-এর মতো দাগ তৈরি করে, যার ফলে ফলন মারাত্মকভাবে হ্রাস পায়।<br>- TMV (Tobacco Mosaic Virus) তামাকের মোজাইক রোগ সৃষ্টি করে। T1 এবং CCC পেঁপে রোগের সাথে সরাসরি সম্পর্কিত নয়।</p>",
+        },
+        {
+          id: 30,
+          question: "পেঁপের রিং স্পট ভাইরাস নিচের কোনটি দ্বারা বাহিত হয়?",
+          options: {
+            a: "বায়ু",
+            b: "পানি",
+            c: "এফিড",
+            d: "মাটি",
+          },
+          correct: "c",
+          explanation:
+            "<p>পেঁপের রিং স্পট ভাইরাস মূলত এফিড (Aphid) নামক ছোট পতঙ্গের মাধ্যমে বাহিত হয়।<br>- এফিড আক্রান্ত গাছ থেকে রস চুষে নেয় এবং পরবর্তীতে সুস্থ গাছে ভাইরাসটি ছড়িয়ে দেয়।<br>- বায়ু, পানি বা মাটি এই ভাইরাসের প্রধান বাহক নয়।</p>",
+        },
+        {
+          id: 31,
+          question: "PRSV এর প্রকৃত বাহক কোনটি?",
+          options: {
+            a: "অ্যানোফেলিস",
+            b: "এডিস",
+            c: "এফিড",
+            d: "প্লাজমোডিয়াম",
+          },
+          correct: "c",
+          explanation:
+            "<p>PRSV (Papaya Ringspot Virus) এর প্রকৃত বাহক হলো এফিড (Aphid)।<br>- এফিড নামক ছোট পতঙ্গগুলো এক গাছ থেকে অন্য গাছে ভাইরাসটি ছড়িয়ে দেয়।<br>- অ্যানোফেলিস এবং এডিস মশা মানুষের রোগের বাহক (যেমন ম্যালেরিয়া এবং ডেঙ্গু)।<br>- প্লাজমোডিয়াম ম্যালেরিয়া সৃষ্টিকারী পরজীবী।</p>",
+        },
+        {
+          id: 32,
+          question:
+            "নিচের কোনটি দ্বারা চিকুনগুনিয়া জ্বরের ভাইরাস সংক্রমিত হয়?",
+          options: {
+            a: "Anopheles virus",
+            b: "Aedes aegypti",
+            c: "Culex spp",
+            d: "Anopheles aconitus",
+          },
+          correct: "b",
+          explanation:
+            "<p>চিকুনগুনিয়া জ্বরের ভাইরাস প্রধানত <i>Aedes aegypti</i> মশার মাধ্যমে মানুষের দেহে সংক্রমিত হয়। <i>Aedes albopictus</i> মশাও এই রোগ ছড়াতে সক্ষম।<br>- <i>Anopheles</i> মশা ম্যালেরিয়ার বাহক।<br>- <i>Culex spp.</i> মশা ফাইলেরিয়া এবং অন্যান্য রোগ ছড়াতে পারে।</p>",
+        },
+        {
+          id: 33,
+          question: "ডেঙ্গু জ্বরের ভাইরাসের কতটি?",
+          options: {
+            a: "দুটি",
+            b: "তিনটি",
+            c: "চারটি",
+            d: "পাঁচটি",
+          },
+          correct: "c",
+          explanation:
+            "<p>ডেঙ্গু জ্বরের ভাইরাসের চারটি সেরোটাইপ (serotypes) রয়েছে।<br>- এগুলো হলো DEN-1, DEN-2, DEN-3 এবং DEN-4।<br>- এই চারটি সেরোটাইপের যেকোনো একটি দ্বারা আক্রান্ত হলে ভবিষ্যতে সেই সেরোটাইপ থেকে সুরক্ষা পাওয়া যায়, তবে অন্য সেরোটাইপ দ্বারা আবার আক্রান্ত হওয়ার ঝুঁকি থাকে।</p>",
+        },
+        {
+          id: 34,
+          question: "'হাড় ভাঙ্গা জ্বর' নিচের কোনটির আরেক নাম?",
+          options: {
+            a: "ডেঙ্গু জ্বর",
+            b: "ম্যালেরিয়া জ্বর",
+            c: "বাতজ্বর",
+            d: "সাধারণ জ্বর",
+          },
+          correct: "a",
+          explanation:
+            "<p>ডেঙ্গু জ্বরকে 'হাড় ভাঙ্গা জ্বর'ও বলা হয়।<br>- এর কারণ হলো, এই রোগে আক্রান্ত ব্যক্তিদের তীব্র জ্বর, মাথাব্যথা এবং হাড়, মাংসপেশী ও জয়েন্টে অসহনীয় ব্যথা হয়, যা হাড় ভেঙে যাওয়ার মতো অনুভূত হয়।</p>",
+        },
+        {
+          id: 35,
+          question: "কোনটি ভাইরাসজনিত রোগ?",
+          options: {
+            a: "ম্যালেরিয়া",
+            b: "ডেঙ্গুজ্বর",
+            c: "কলেরা",
+            d: "পেঁপের রিং স্পট",
+          },
+          correct: "d",
+          explanation:
+            "<p>পেঁপের রিং স্পট (Papaya Ringspot) একটি ভাইরাসজনিত রোগ, যা PRSV (Papaya Ringspot Virus) দ্বারা সৃষ্ট হয়।<br>- ম্যালেরিয়া <i>Plasmodium</i> নামক পরজীবী দ্বারা সৃষ্ট হয়।<br>- ডেঙ্গুজ্বর ডেঙ্গু ভাইরাস দ্বারা সৃষ্ট হয়, কিন্তু প্রশ্নটি সামগ্রিকভাবে ভাইরাসজনিত রোগ জানতে চেয়েছে এবং অপশন (b) ও (d) উভয়ই ভাইরাসজনিত। তবে 'পেঁপের রিং স্পট' নির্দিষ্টভাবে একটি উদ্ভিদ ভাইরাসজনিত রোগ।<br>- কলেরা <i>Vibrio cholerae</i> নামক ব্যাকটেরিয়ার কারণে হয়।</p>",
+        },
+        {
+          id: 36,
+          question:
+            "পেঁপের রিং স্পট রোগের জীবাণুর সাথে নিচের কোন রোগের জীবাণু সাদৃশ্যপূর্ণ?",
+          options: {
+            a: "কলেরা",
+            b: "ধানের ব্লাইট",
+            c: "ম্যালেরিয়া",
+            d: "ডেঙ্গু",
+          },
+          correct: "d",
+          explanation:
+            "<p>পেঁপের রিং স্পট রোগের জীবাণু (PRSV) এবং ডেঙ্গু রোগের জীবাণু (ডেঙ্গু ভাইরাস) উভয়ই ভাইরাস।<br>- যদিও তারা ভিন্ন গোত্রের (PRSV পটিভাইরাস গোত্রের, ডেঙ্গু ফ্ল্যাভিভাইরাস গোত্রের), কিন্তু সাদৃশ্যপূর্ণ বলতে উভয়ই ভাইরাসঘটিত রোগকে বোঝানো হয়েছে।<br>- কলেরা ব্যাকটেরিয়াজনিত রোগ।<br>- ধানের ব্লাইট ব্যাকটেরিয়াজনিত রোগ।<br>- ম্যালেরিয়া পরজীবী দ্বারা সৃষ্ট রোগ।</p>",
+        },
+        {
+          id: 37,
+          question: "মানুষের ভাইরাস ঘটিত রোগ কোনটি?",
+          options: {
+            a: "কলেরা",
+            b: "আমাশয়",
+            c: "হেপাটাইটিস",
+            d: "যক্ষ্মা",
+          },
+          correct: "c",
+          explanation:
+            "<p>হেপাটাইটিস হলো মানুষের একটি ভাইরাসঘটিত রোগ, যা বিভিন্ন হেপাটাইটিস ভাইরাসের (A, B, C, D, E) সংক্রমণে হয়।<br>- কলেরা <i>Vibrio cholerae</i> নামক ব্যাকটেরিয়ার কারণে হয়।<br>- আমাশয় ব্যাকটেরিয়া (যেমন <i>Shigella</i>) বা অ্যামিবা (যেমন <i>Entamoeba histolytica</i>) দ্বারা হতে পারে।<br>- যক্ষ্মা <i>Mycobacterium tuberculosis</i> নামক ব্যাকটেরিয়ার কারণে হয়।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                        <label class="option" data-option="${option}">
+                          <div class="circle">${option}</div>
+                          <span class="option-text">${question.options[option]}</span>
+                        </label>
+                      `;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                           <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                           <div class="explanation-content">
+                             <div class="explanation-label">ব্যাখ্যা:</div>
+                             ${question.explanation}
+                           </div>
+                         </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                      <p class="question-label">${index + 1}. ${
+            question.question
+          }</p>
+                      <div class="options">
+                        ${optionsHTML}
+                      </div>
+                      ${explanationHTML}
+                    `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
